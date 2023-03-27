@@ -34,18 +34,15 @@ impl PipedCommand {
             })
             .collect::<Vec<_>>();
 
-        let mut prev = cmds[0]
-            .stdout(Stdio::piped())
-            .spawn()
-            .expect("empty pipeline");
+        // `Command` panics on empty string, so I guess this is fine.
+        let mut prev = cmds[0].stdout(Stdio::piped()).spawn()?;
 
         // Chain the commands.
         for cmd in cmds.iter_mut().skip(1) {
             prev = cmd
                 .stdin(Stdio::from(prev.stdout.unwrap()))
                 .stdout(Stdio::piped())
-                .spawn()
-                .unwrap_or_else(|_| panic!("failed to start {:?}", cmd.get_program()));
+                .spawn()?;
         }
 
         prev.wait_with_output()
